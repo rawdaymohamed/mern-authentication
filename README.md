@@ -1,1 +1,1 @@
-# express-authentication
+# MERN-authentication
