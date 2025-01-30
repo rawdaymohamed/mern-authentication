@@ -2,7 +2,8 @@ import { User } from "../models/user.model.js";
 import bcryptjs from "bcryptjs"
 import { generateVerificationToken } from "../utils/generateVerificationToken.js";
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
-import { sendVerificationEmail } from "../mailtrap/emails.js";
+import { sendVerificationEmail, sendWelcomeEmail } from "../mailtrap/emails.js";
+
 export const register = async (req, res) => {
     const { name, email, password } = req.body;
     try {
@@ -20,7 +21,7 @@ export const register = async (req, res) => {
             email,
             password: hashedPassword,
             verificationToken,
-            resetPasswordTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000
+            verificationTokenExpiresAt: Date.now() + 24 * 60 * 60 * 1000
         });
         await user.save();
         // jwt
@@ -31,10 +32,39 @@ export const register = async (req, res) => {
             user: { ...user._doc, password: undefined }
         })
     } catch (error) {
-        res.status(400).json({ message: error.message })
+        res.status(500).json({ message: error.message })
     }
 
 }
+export const verifyEmail = async (req, res) => {
+    const { email, code } = req.body;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        if (user.isVerified) {
+            return res.status(200).json({ message: "User is already verified" });
+        }
+        if (user.verificationToken !== code || user.verificationTokenExpiresAt <= Date.now()) {
+            return res.status(400).json({ message: "Invalid or expired authentication token" });
+        }
+
+        user.isVerified = true;
+        user.verificationToken = undefined;
+        user.verificationTokenExpiresAt = undefined;
+        await user.save();
+
+        await sendWelcomeEmail(user.email, user.name);
+
+        return res.status(200).json({
+            message: "Email verified successfully",
+            user: { ...user._doc, password: undefined }
+        });
+    } catch (error) {
+        res.status(500).json({ message: "An error occurred while verifying email" });
+    }
+};
 export const login = async (req, res) => {
     res.json({ message: "Login route" })
 }
