@@ -69,5 +69,6 @@ export const login = async (req, res) => {
     res.json({ message: "Login route" })
 }
 export const logout = async (req, res) => {
+    res.clearCookie("token")
     res.json({ message: "Logout route" })
 }
