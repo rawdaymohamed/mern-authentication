@@ -139,16 +139,3 @@ export const resetPassword = async (req, res) => {
         console.log("resetPassword", error)
     }
 }
-export const checkAuth = async (req, res) => {
-    try {
-        const user = await User.findOne({ _id: req.userId });
-        if (!user) {
-            return res.status(400).json({ message: "User not found" })
-        }
-        return res.status(200).json({ user: { ...user._doc, password: undefined } })
-    } catch (error) {
-
-        res.status(500).json({ message: "An error occurred while trying to check authenticated" });
-        console.log("resetPassword", error)
-    }
-}
